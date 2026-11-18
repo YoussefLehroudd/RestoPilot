@@ -865,3 +865,20 @@ body.dark .sidebar-scroll{scrollbar-color:transparent transparent}
 /* Reservation PARTY values remain on one line in compact tables */
 .data-table .table-party{display:inline-block;white-space:nowrap;word-break:keep-all;min-width:max-content;font-variant-numeric:tabular-nums}
 @media(max-width:610px){.data-table td:has(> .table-party){white-space:nowrap;min-width:80px}.data-table .table-party{font-size:11px}}
+
+/* Customer phone numbers stay on one line on compact screens */
+.data-table .table-phone{
+  display:inline-block;
+  min-width:max-content;
+  white-space:nowrap;
+  word-break:keep-all;
+  overflow-wrap:normal;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:610px){
+  .data-table td:has(> .table-phone){
+    min-width:132px;
+    white-space:nowrap;
+  }
+  .data-table .table-phone{font-size:11px}
+}
