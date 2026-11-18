@@ -103,7 +103,7 @@ function table(headers,rows){return `<div class="table-scroll"><table class="dat
 const paid=()=>db.orders.filter(x=>x.status==='paid');
 const revenue=()=>paid().reduce((a,x)=>a+Number(x.amount),0);
 const low=()=>db.inventory.filter(x=>x.quantity<=x.min);
-const rowsOrders=a=>a.map(o=>cells([`<span class="strong">#RP-${o.id}</span>`,person(o.customer),E(o.item),`<span class="strong nowrap">${money(o.amount)}</span>`,badge(o.status),fmt(o.date),statusSelect('orders',o),actionCells('orders',o.id)]));
+const rowsOrders=a=>a.map(o=>cells([`<span class="strong">#RP-${o.id}</span>`,person(o.customer),E(o.item),`<span class="strong nowrap">${money(o.amount)}</span>`,badge(o.status),`<time class="table-date" datetime="${E(o.date)}">${fmt(o.date)}</time>`,statusSelect('orders',o),actionCells('orders',o.id)]));
 function duration(){return `<div class="chart-controls"><button data-range="7" class="${range===7?'active':''}">7 days</button><button data-range="30" class="${range===30?'active':''}">30 days</button></div>`}
 function graph(){
  if(!window.Chart)return;
@@ -131,7 +131,7 @@ function menuCards(a){return a.map(m=>`<article class="menu-card"><div class="me
 function menuPage(){const cat=[...new Set(db.menu.map(m=>m.category))];return head('Menu Management','Make your menu as memorable as your food.',btn(icons('eye')+' Guest preview','guest','btn btn-light')+add('menu','Add dish'))+
  stats([['Menu items',db.menu.length,'Dishes on the menu','book-open'],['Available',db.menu.filter(m=>m.available).length,'Ready to order','check-circle'],['Categories',cat.length,'Food groupings','layers'],['Average price',money(db.menu.reduce((a,m)=>a+m.price,0)/(db.menu.length||1)),'Across all dishes','badge-dollar-sign']])+
  controls('Search dishes and ingredients...',cat)+`<div class="menu-grid" id="results">${menuCards(list('menu',['name','category','description']))}</div>`}
-function reservationRows(){return list('reservations',['customer','date','time','table']).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).map(r=>cells([person(r.customer),fmt(r.date),E(r.time),`${r.guests} guests`,E(r.table),badge(r.status),statusSelect('reservations',r),actionCells('reservations',r.id)]))}
+function reservationRows(){return list('reservations',['customer','date','time','table']).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).map(r=>cells([person(r.customer),`<time class="table-date" datetime="${E(r.date)}">${fmt(r.date)}</time>`,E(r.time),`${r.guests} guests`,E(r.table),badge(r.status),statusSelect('reservations',r),actionCells('reservations',r.id)]))}
 function reservationPage(){return head('Reservations','A seamless welcome starts before guests arrive.',exp('reservations')+add('reservations','New reservation'))+
  stats([['Reservations',db.reservations.length,'Total bookings','calendar-days'],["Today's arrivals",db.reservations.filter(r=>r.date===today()).length,'Expected today','calendar-check'],['Confirmed',db.reservations.filter(r=>r.status==='confirmed').length,'Booked tables','check-circle'],['Expected guests',db.reservations.filter(r=>r.status!=='cancelled').reduce((a,r)=>a+r.guests,0),'Across active bookings','users']])+
  controls('Search guest, date, table...',['pending','confirmed','completed','cancelled'])+
