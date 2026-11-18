@@ -91,7 +91,9 @@ function jump(p,label='View all'){return `<button class="panel-link" data-page="
 function stat(title,value,note,icon,i){return `<article class="stat-card"><div class="stat-upper"><span class="stat-icon ${['t-orange','t-green','t-blue','t-purple'][i%4]}">${icons(icon)}</span><span class="stat-trend neutral">DEMO DATA</span></div><p class="stat-label">${title}</p><div class="stat-value">${value}</div><div class="stat-note">${note}</div></article>`}
 function stats(arr){return `<div class="stats-grid">${arr.map((x,i)=>stat(...x,i)).join('')}</div>`}
 function badge(value,cls=value){return `<span class="badge ${E(String(cls).toLowerCase())}">${E(value)}</span>`}
-function avatar(name){return `<span class="mini-avatar">${E(initial(name))}</span>`}
+const avatarOverrides={'Alex Laurent':68,'Sofia Martin':32,'Yassine El Amrani':12,'Lina Bennani':47,'Adam Mansouri':15,'Emma Wilson':44,'Omar Haddad':14,'Noah Thomas':13,'Sara Idrissi':45,'Jules Bernard':11,'Imane Amrani':48,'Lucas Moreau':33,'Nora Belkacem':46,'Ahmed Said':18,'Amine Zahraoui':16,'Sara El Fassi':49,'Younes Rahmani':21,'Leila Amrani':38,'Karim Saidi':22};
+function avatarUrl(name){let n=avatarOverrides[name];if(!n){let hash=0;for(const ch of String(name))hash=((hash<<5)-hash+ch.charCodeAt(0))|0;n=1+(Math.abs(hash)%70)}return 'https://i.pravatar.cc/120?img='+n}
+function avatar(name){return `<span class="mini-avatar avatar-frame"><img class="avatar-image" alt="${E(name)}" loading="lazy" referrerpolicy="no-referrer" src="${avatarUrl(name)}" onerror="this.style.display='none'"><span class="avatar-initials">${E(initial(name))}</span></span>`}
 function person(name){return `<span class="table-cell-flex">${avatar(name)}<span class="strong">${E(name)}</span></span>`}
 function image(src,cl){return `<img class="${cl}" src="${img(src)}" loading="lazy" alt="Dish photo" onerror="this.onerror=null;this.src='${pics[4]}'">`}
 function actionCells(kind,id){return `<div class="row-actions"><button data-action="edit" data-kind="${kind}" data-id="${id}" class="small-icon" aria-label="Edit">${icons('pencil')}</button><button data-action="delete" data-kind="${kind}" data-id="${id}" class="small-icon" aria-label="Delete">${icons('trash-2')}</button></div>`}
@@ -156,7 +158,7 @@ function settingsPage(){return head('Settings','Fine-tune your workspace and per
 const views={overview,orders:orderPage,tables:tablesPage,reservations:reservationPage,menu:menuPage,inventory:inventoryPage,customers:customersPage,staff:staffPage,analytics:analyticsPage,settings:settingsPage};
 function list(kind,keys){return db[kind].filter(x=>(filter==='all'||(x.status||x.category)===filter)&&keys.some(k=>String(x[k]??'').toLowerCase().includes(query.toLowerCase())))}
 function navRender(){$('#workspaceName').textContent=db.settings.name;$('#sideNav').innerHTML=nav.map(([title,links])=>`<div class="nav-label">${title}</div>${links.map(([id,ic,t])=>`<button class="side-link ${id===page?'active':''}" data-page="${id}">${icons(ic)}<span>${t}</span>${id==='orders'&&db.orders.some(o=>o.status==='new')?`<span class="count">${db.orders.filter(o=>o.status==='new').length}</span>`:''}</button>`).join('')}`).join('')}
-function render(){charts.forEach(c=>c.destroy());charts=[];document.body.classList.toggle('dark',db.settings.theme==='dark');$('#breadcrumb').textContent=names[page];navRender();$('#pageContent').innerHTML=(views[page]||overview)();refresh();if(page==='overview'||page==='analytics')graph();const count=$('#resultCount');if(count)count.textContent=`${list(page,{orders:['id','customer','item','channel'],menu:['name','category','description'],reservations:['customer','date','table'],inventory:['name','category'],customers:['name','email','phone'],staff:['name','role']}[page]||['name']).length} records`}
+function render(){charts.forEach(c=>c.destroy());charts=[];document.body.classList.toggle('dark',db.settings.theme==='dark');$('#breadcrumb').textContent=names[page];navRender();$('#pageContent').innerHTML=(views[page]||overview)();refresh();enhanceSelects();syncNotificationBadge();if(page==='overview'||page==='analytics')graph();const count=$('#resultCount');if(count)count.textContent=`${list(page,{orders:['id','customer','item','channel'],menu:['name','category','description'],reservations:['customer','date','table'],inventory:['name','category'],customers:['name','email','phone'],staff:['name','role']}[page]||['name']).length} records`}
 function go(p){if(p==='guest'){openGuest();return}if(!views[p])p='overview';page=p;query='';filter='all';location.hash=p;$('#sidebar').classList.remove('open');$('#mobileShade').classList.remove('open');render();window.scrollTo(0,0)}
 function openGuest(){window.open(location.origin+location.pathname+'?guest=1','_blank','noopener,noreferrer')}
 function guestRender(){document.body.classList.remove('dark');document.body.innerHTML=`<div class="guest-shell"><header class="guest-head"><div class="guest-brand">resto<span>pilot.</span></div><a class="btn btn-light" href="${E(location.pathname+'#overview')}">${icons('layout-dashboard')} Owner dashboard</a></header><section class="guest-hero"><div class="guest-intro"><div class="hero-pill">✦ A RESTOPILOT EXPERIENCE</div><h1>${E(db.settings.name)}</h1><p>Good food. Great company. Unforgettable moments. Explore our signature dishes.</p></div></section><main class="guest-main"><div class="heading-row"><div><div class="page-eyebrow">FRESHLY MADE WITH LOVE</div><h2 style="font-size:27px;margin:0">Explore our menu</h2><p class="page-subtitle">${E(db.settings.location)}</p></div><button id="guestCart" class="btn btn-dark">${icons('shopping-bag')} Cart <span id="cartCount">0</span></button></div><div class="guest-cats" id="guestCats"></div><div class="guest-grid" id="guestItems"></div></main><footer class="guest-footer">Made with ♡ · Powered by RestoPilot · Interactive demo, no real purchases</footer></div><div class="toast-root" id="toastRoot"></div>`;guestItems();refresh()}
@@ -170,10 +172,10 @@ const formFields={
  customers:[['name','Full name','text'],['email','Email address','email'],['phone','Phone number','text'],['visits','Visits','number'],['segment','Segment','select:New|Regular|VIP']],
  staff:[['name','Full name','text'],['role','Role','text'],['shift','Shift','select:Morning|Evening|Night'],['email','Email','email'],['status','Status','select:active|inactive']]
 };
-function formModal(kind,id=null){const obj=id===null?null:db[kind].find(x=>x.id===id);if(!formFields[kind])return;editState={kind,id};const markup=formFields[kind].map(([k,t,type])=>{let v=obj?.[k]??(k==='date'?today():k==='status'?(statuses[kind]?.[0]||'active'):k==='available'?true:k==='item'?db.menu[0]?.name:k==='amount'?db.menu[0]?.price:k==='channel'?'Dine in':'');let html='';if(type==='textarea')html=`<textarea name="${k}" id="f-${k}">${E(v)}</textarea>`;else if(type==='boolean')html=`<select name="${k}" id="f-${k}"><option value="true" ${v===true?'selected':''}>Yes</option><option value="false" ${v===false?'selected':''}>No</option></select>`;else if(type==='menu')html=`<select name="${k}" id="f-${k}">${db.menu.map(m=>`<option value="${E(m.name)}" ${v===m.name?'selected':''}>${E(m.name)}</option>`).join('')}</select>`;else if(type.startsWith('select:'))html=`<select name="${k}" id="f-${k}">${type.slice(7).split('|').map(x=>`<option value="${E(x)}" ${x===v?'selected':''}>${E(x)}</option>`).join('')}</select>`;else html=`<input id="f-${k}" name="${k}" type="${type}" value="${E(v)}" ${type==='number'?'min="0" step="any"':''}>`;return `<div class="field"><label for="f-${k}">${t}</label>${html}</div>`}).join('');$('#modalRoot').innerHTML=`<div class="modal-backdrop" id="modalShade"><div class="modal-card" role="dialog" aria-modal="true"><div class="modal-titlebar"><div><div class="page-eyebrow">RESTOPILOT · ${kind.toUpperCase()}</div><h2>${obj?'Edit':'Add'} ${kind.slice(0,-1)}</h2><p>Changes are saved locally in this browser.</p></div><button class="small-icon" data-action="close">${icons('x')}</button></div><form id="recordForm">${markup}<div class="modal-actions"><button type="button" class="btn btn-light" data-action="close">Cancel</button><button class="btn" type="submit">${icons('save')} Save changes</button></div></form></div></div>`;refresh();$('#recordForm input')?.focus()}
+function formModal(kind,id=null){const obj=id===null?null:db[kind].find(x=>x.id===id);if(!formFields[kind])return;editState={kind,id};const markup=formFields[kind].map(([k,t,type])=>{let v=obj?.[k]??(k==='date'?today():k==='status'?(statuses[kind]?.[0]||'active'):k==='available'?true:k==='item'?db.menu[0]?.name:k==='amount'?db.menu[0]?.price:k==='channel'?'Dine in':'');let html='';if(type==='textarea')html=`<textarea name="${k}" id="f-${k}">${E(v)}</textarea>`;else if(type==='boolean')html=`<select name="${k}" id="f-${k}"><option value="true" ${v===true?'selected':''}>Yes</option><option value="false" ${v===false?'selected':''}>No</option></select>`;else if(type==='menu')html=`<select name="${k}" id="f-${k}">${db.menu.map(m=>`<option value="${E(m.name)}" ${v===m.name?'selected':''}>${E(m.name)}</option>`).join('')}</select>`;else if(type.startsWith('select:'))html=`<select name="${k}" id="f-${k}">${type.slice(7).split('|').map(x=>`<option value="${E(x)}" ${x===v?'selected':''}>${E(x)}</option>`).join('')}</select>`;else html=`<input id="f-${k}" name="${k}" type="${type}" value="${E(v)}" ${type==='number'?'min="0" step="any"':''}>`;return `<div class="field"><label for="f-${k}">${t}</label>${html}</div>`}).join('');$('#modalRoot').innerHTML=`<div class="modal-backdrop" id="modalShade"><div class="modal-card" role="dialog" aria-modal="true"><div class="modal-titlebar"><div><div class="page-eyebrow">RESTOPILOT · ${kind.toUpperCase()}</div><h2>${obj?'Edit':'Add'} ${kind.slice(0,-1)}</h2><p>Changes are saved locally in this browser.</p></div><button class="small-icon" data-action="close">${icons('x')}</button></div><form id="recordForm">${markup}<div class="modal-actions"><button type="button" class="btn btn-light" data-action="close">Cancel</button><button class="btn" type="submit">${icons('save')} Save changes</button></div></form></div></div>`;refresh();enhanceSelects();$('#recordForm input')?.focus()}
 function closeModal(){$('#modalRoot').innerHTML='';editState=null}
 function exportCSV(kind){const a=db[kind];if(!Array.isArray(a)||!a.length)return toast('No records to export');const cols=[...new Set(a.flatMap(o=>Object.keys(o)))],csv=[cols.join(','),...a.map(o=>cols.map(k=>`"${String(o[k]??'').replace(/"/g,'""')}"`).join(','))].join('\r\n'),url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=`restopilot-${kind}.csv`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV exported')}
-function filteredRender(){const el=$('#results');if(!el)return;const renderer={orders:orderResults,reservations:()=>table(['GUEST','DATE','TIME','PARTY','TABLE','STATUS','UPDATE',''],reservationRows()),menu:()=>menuCards(list('menu',['name','category','description'])),inventory:()=>table(['INGREDIENT','CATEGORY','ON HAND','STOCK HEALTH','STATUS',''],inventoryRows()),customers:()=>table(['CUSTOMER','EMAIL','PHONE','VISITS','SEGMENT',''],customerRows()),staff:()=>table(['TEAM MEMBER','ROLE','SHIFT','EMAIL','STATUS','UPDATE',''],staffRows())}[page];if(renderer)el.innerHTML=renderer();const count=$('#resultCount');if(count)count.textContent=`${list(page,{orders:['id','customer','item','channel'],menu:['name','category','description'],reservations:['customer','date','table'],inventory:['name','category'],customers:['name','email','phone'],staff:['name','role']}[page]||['name']).length} of ${db[page].length} records`;refresh()}
+function filteredRender(){const el=$('#results');if(!el)return;const renderer={orders:orderResults,reservations:()=>table(['GUEST','DATE','TIME','PARTY','TABLE','STATUS','UPDATE',''],reservationRows()),menu:()=>menuCards(list('menu',['name','category','description'])),inventory:()=>table(['INGREDIENT','CATEGORY','ON HAND','STOCK HEALTH','STATUS',''],inventoryRows()),customers:()=>table(['CUSTOMER','EMAIL','PHONE','VISITS','SEGMENT',''],customerRows()),staff:()=>table(['TEAM MEMBER','ROLE','SHIFT','EMAIL','STATUS','UPDATE',''],staffRows())}[page];if(renderer)el.innerHTML=renderer();const count=$('#resultCount');if(count)count.textContent=`${list(page,{orders:['id','customer','item','channel'],menu:['name','category','description'],reservations:['customer','date','table'],inventory:['name','category'],customers:['name','email','phone'],staff:['name','role']}[page]||['name']).length} of ${db[page].length} records`;refresh();enhanceSelects()}
 document.addEventListener('click',e=>{
  if(e.target.id==='modalShade'){closeModal();return}
  const cat=e.target.closest('[data-guest-cat]');if(cat){guestCat=cat.dataset.guestCat;guestItems();return}
@@ -186,23 +188,196 @@ document.addEventListener('click',e=>{
  if(action==='edit'){formModal(kind,Number(id));return}
  if(action==='close'){closeModal();return}
  if(action==='delete'){if(confirm('Delete this local demo record?')){db[kind]=db[kind].filter(x=>x.id!==Number(id));save();render();toast('Record deleted')}return}
- if(action==='cycle'){const t=db.tables.find(x=>x.id===Number(id)),states=statuses.tables;if(t){t.status=states[(states.indexOf(t.status)+1)%states.length];save();render();toast(`${t.name} is ${t.status}`)}return}
+ if(action==='cycle'){const t=db.tables.find(x=>x.id===Number(id)),states=statuses.tables;if(t){t.status=states[(states.indexOf(t.status)+1)%states.length];addNotification('Table status changed',`${t.name} is now ${t.status}.`,'table','tables');save();render();toast(`${t.name} is ${t.status}`)}return}
  if(action==='export'){exportCSV(kind);return}
  if(action==='guest'){openGuest();return}
  if(action==='theme'){db.settings.theme=value;save();render();toast(`${value} theme enabled`);return}
- if(action==='reset'){if(confirm('Reset all local changes and restore original demo data?')){db=seed();save();render();toast('Demo restored')}return}
+ if(action==='reset'){if(confirm('Reset all local changes and restore original demo data?')){db=seed();save();notifications=initialNotifications();saveNotifications();render();toast('Demo restored')}return}
 });
 document.addEventListener('submit',e=>{
  if(e.target.id==='settingsForm'){e.preventDefault();Object.assign(db.settings,Object.fromEntries(new FormData(e.target)));save();render();toast('Settings saved');return}
- if(e.target.id==='recordForm'){e.preventDefault();if(!editState)return;const {kind,id}=editState,record=Object.fromEntries(new FormData(e.target));for(const k of ['amount','price','guests','quantity','min','seats','visits','sold'])if(k in record)record[k]=Math.max(0,Number(record[k])||0);if('available' in record)record.available=record.available==='true';if('image' in record&&!/^https:\/\//.test(record.image))record.image=pics[4];if(kind==='orders'&&!record.table)record.table='—';if(id!==null){Object.assign(db[kind].find(x=>x.id===id),record)}else db[kind].unshift({id:Math.max(0,...db[kind].map(x=>x.id))+1,...record});save();closeModal();render();toast('Changes saved')}
+ if(e.target.id==='recordForm'){e.preventDefault();if(!editState)return;const {kind,id}=editState,record=Object.fromEntries(new FormData(e.target));for(const k of ['amount','price','guests','quantity','min','seats','visits','sold'])if(k in record)record[k]=Math.max(0,Number(record[k])||0);if('available' in record)record.available=record.available==='true';if('image' in record&&!/^https:\/\//.test(record.image))record.image=pics[4];if(kind==='orders'&&!record.table)record.table='—';if(id!==null){Object.assign(db[kind].find(x=>x.id===id),record)}else db[kind].unshift({id:Math.max(0,...db[kind].map(x=>x.id))+1,...record});addNotification(id===null?'New '+kind.slice(0,-1):'Updated '+kind.slice(0,-1),(record.customer||record.name||('Record #'+id))+' was '+(id===null?'created':'updated')+'.','activity',kind);save();closeModal();render();toast('Changes saved')}
 });
 document.addEventListener('input',e=>{if(e.target.id==='listSearch'){query=e.target.value;filteredRender()}});
-document.addEventListener('change',e=>{if(e.target.id==='listFilter'){filter=e.target.value;filteredRender()}if(e.target.matches('[data-status]')){const o=db[e.target.dataset.status]?.find(x=>x.id===Number(e.target.dataset.id));if(o){o.status=e.target.value;save();render();toast('Status updated')}}if(e.target.name==='item'&&editState?.kind==='orders'&&editState.id===null){const m=db.menu.find(x=>x.name===e.target.value);if(m&&$('#f-amount'))$('#f-amount').value=m.price}});
+document.addEventListener('change',e=>{if(e.target.id==='listFilter'){filter=e.target.value;filteredRender()}if(e.target.matches('[data-status]')){const o=db[e.target.dataset.status]?.find(x=>x.id===Number(e.target.dataset.id));if(o){o.status=e.target.value;addNotification('Status updated',`${e.target.dataset.status==='orders'?'Order #RP-'+o.id:e.target.dataset.status==='reservations'?'Reservation for '+o.customer:'Team member '+o.name} is now ${o.status}.`,'status',e.target.dataset.status);save();render();toast('Status updated')}}if(e.target.name==='item'&&editState?.kind==='orders'&&editState.id===null){const m=db.menu.find(x=>x.name===e.target.value);if(m&&$('#f-amount'))$('#f-amount').value=m.price}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();$('#sidebar')?.classList.remove('open');$('#mobileShade')?.classList.remove('open')}});
 $('#mobileMenu')?.addEventListener('click',()=>{$('#sidebar').classList.toggle('open');$('#mobileShade').classList.toggle('open')});
 $('#mobileShade')?.addEventListener('click',()=>{$('#sidebar').classList.remove('open');$('#mobileShade').classList.remove('open')});
 $('#userProfile')?.addEventListener('click',()=>go('settings'));$('#topAvatar')?.addEventListener('click',()=>go('settings'));$('#tourBtn')?.addEventListener('click',()=>go('analytics'));
-$('#notificationBtn')?.addEventListener('click',()=>{go('inventory');toast(`${low().length} items to restock`)});
+$('#notificationBtn')?.addEventListener('click',e=>{e.stopPropagation();toggleNotificationPanel()});
 $('#searchTrigger')?.addEventListener('click',()=>{go('orders');$('#listSearch')?.focus()});
 window.addEventListener('hashchange',()=>{if(new URLSearchParams(location.search).has('guest'))return;const v=location.hash.slice(1);if(views[v]&&v!==page){page=v;query='';filter='all';render()}});
 if(new URLSearchParams(location.search).has('guest'))guestRender();else{page=views[location.hash.slice(1)]?location.hash.slice(1):'overview';$('#footerYear').textContent=new Date().getFullYear();render()}
+
+
+/* --- RestoPilot premium select system --- */
+let selectPopup=null;
+function closeCustomSelect(){
+  if(!selectPopup)return;
+  selectPopup.trigger.setAttribute('aria-expanded','false');
+  selectPopup.trigger.closest('.rp-select')?.classList.remove('open');
+  selectPopup.menu.remove();
+  selectPopup=null;
+}
+function enhanceSelects(root=document){
+  root.querySelectorAll('select:not([data-enhanced])').forEach(native=>{
+    native.dataset.enhanced='true';
+    const wrap=document.createElement('div');wrap.className='rp-select';
+    native.parentNode.insertBefore(wrap,native);wrap.appendChild(native);
+    native.classList.add('rp-native-select');native.tabIndex=-1;native.setAttribute('aria-hidden','true');
+    const trigger=document.createElement('button');trigger.type='button';
+    trigger.className='rp-select-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');
+    trigger.setAttribute('aria-label',native.getAttribute('aria-label')||native.closest('.field')?.querySelector('label')?.textContent?.trim()||'Choose option');
+    trigger.innerHTML='<span class="rp-current"></span><span class="rp-select-chevron" aria-hidden="true"></span>';
+    wrap.appendChild(trigger);updateCustomSelect(native);
+  });
+}
+function updateCustomSelect(native){
+  const wrap=native.closest('.rp-select');if(!wrap)return;
+  const current=wrap.querySelector('.rp-current');if(current)current.textContent=native.selectedOptions[0]?.textContent||'Select an option';
+  wrap.dataset.state=String(native.value).toLowerCase().replace(/[^a-z0-9-]/g,'-');
+}
+function openCustomSelect(trigger){
+  const wrap=trigger.closest('.rp-select');const native=wrap.querySelector('select');
+  if(selectPopup?.trigger===trigger){closeCustomSelect();return}
+  closeCustomSelect();
+  const menu=document.createElement('div');menu.className='rp-select-menu';menu.setAttribute('role','listbox');
+  menu.setAttribute('aria-label',trigger.getAttribute('aria-label')||'Options');
+  Array.from(native.options).forEach((opt,i)=>{
+    if(opt.hidden)return;
+    const item=document.createElement('button');item.type='button';item.className='rp-select-option';
+    item.dataset.selectIndex=String(i);item.dataset.state=String(opt.value).toLowerCase().replace(/[^a-z0-9-]/g,'-');
+    item.setAttribute('role','option');item.setAttribute('aria-selected',opt.selected?'true':'false');
+    item.disabled=opt.disabled;
+    const label=document.createElement('span');label.className='rp-option-label';label.textContent=opt.textContent;
+    const check=document.createElement('span');check.className='rp-option-check';check.textContent='✓';
+    item.append(label,check);menu.append(item);
+    if(opt.selected)item.classList.add('selected');
+  });
+  document.body.append(menu);
+  const rect=trigger.getBoundingClientRect();
+  const width=Math.max(170,rect.width);
+  const availableBelow=window.innerHeight-rect.bottom-12;
+  const openAbove=availableBelow<200&&rect.top>availableBelow;
+  menu.style.width=Math.min(width,window.innerWidth-20)+'px';
+  menu.style.left=Math.max(10,Math.min(rect.left,window.innerWidth-Math.min(width,window.innerWidth-20)-10))+'px';
+  menu.style.maxHeight=Math.max(105,Math.min(320,openAbove?rect.top-16:availableBelow))+'px';
+  menu.style.top=(openAbove?Math.max(10,rect.top-Math.min(menu.scrollHeight,320)-7):rect.bottom+7)+'px';
+  trigger.setAttribute('aria-expanded','true');wrap.classList.add('open');
+  selectPopup={trigger,menu,native};
+  menu.querySelector('.selected')?.scrollIntoView({block:'nearest'});
+}
+function pickCustomSelect(index){
+  if(!selectPopup)return;
+  const native=selectPopup.native,trigger=selectPopup.trigger;
+  const option=native.options[index];if(!option||option.disabled)return;
+  const previous=native.value;native.selectedIndex=index;
+  updateCustomSelect(native);
+  closeCustomSelect();
+  trigger.focus({preventScroll:true});
+  if(previous!==native.value)native.dispatchEvent(new Event('change',{bubbles:true}));
+}
+document.addEventListener('click',event=>{
+  const trigger=event.target.closest('.rp-select-trigger');
+  if(trigger){openCustomSelect(trigger);return}
+  const option=event.target.closest('.rp-select-option');
+  if(option){pickCustomSelect(Number(option.dataset.selectIndex));return}
+  if(selectPopup&&!event.target.closest('.rp-select-menu'))closeCustomSelect();
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&selectPopup){event.stopImmediatePropagation();event.preventDefault();closeCustomSelect();return}
+  const trigger=event.target.closest('.rp-select-trigger');
+  if(trigger&&['Enter',' ','ArrowDown','ArrowUp'].includes(event.key)){
+    event.preventDefault();
+    if(!selectPopup||selectPopup.trigger!==trigger)openCustomSelect(trigger);
+    if(selectPopup&&event.key.startsWith('Arrow')){
+      const list=Array.from(selectPopup.menu.querySelectorAll('.rp-select-option:not(:disabled)'));
+      const curr=list.indexOf(selectPopup.menu.querySelector('.selected'));
+      const next=list[(curr+(event.key==='ArrowDown'?1:list.length-1))%list.length];
+      next?.focus();
+    }
+    return;
+  }
+  if(event.target.closest('.rp-select-option')){
+    const items=Array.from(selectPopup?.menu.querySelectorAll('.rp-select-option:not(:disabled)')||[]);
+    const curr=items.indexOf(event.target);
+    if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+      event.preventDefault();items[(curr+(event.key==='ArrowDown'?1:items.length-1))%items.length]?.focus();
+    }else if(event.key==='Enter'||event.key===' '){event.preventDefault();pickCustomSelect(Number(event.target.dataset.selectIndex))}
+  }
+});
+window.addEventListener('scroll',closeCustomSelect,true);
+window.addEventListener('resize',closeCustomSelect);
+
+/* --- RestoPilot notification center --- */
+const notificationKey='restopilot-notifications-v2';
+const initialNotifications=()=>[
+ {id:'welcome-order',title:'New order received',message:'Order #RP-1048 from Sofia Martin is waiting for preparation.',type:'order',page:'orders',read:false,at:Date.now()-120000},
+ {id:'welcome-booking',title:'Reservation confirmed',message:'Sarah & Friends booked a table for 19:30.',type:'reservation',page:'reservations',read:false,at:Date.now()-600000},
+ {id:'welcome-stock',title:'Stock needs attention',message:'Some ingredients have fallen below their minimum stock levels.',type:'stock',page:'inventory',read:false,at:Date.now()-1600000}
+];
+let notifications;
+try{notifications=JSON.parse(localStorage.getItem(notificationKey));if(!Array.isArray(notifications))notifications=initialNotifications()}catch{notifications=initialNotifications()}
+const saveNotifications=()=>{try{localStorage.setItem(notificationKey,JSON.stringify(notifications.slice(0,70)))}catch{}};
+function addNotification(title,message,type='activity',destination='overview'){
+  notifications.unshift({id:'n'+Date.now()+Math.random().toString(36).slice(2,6),title,message,type,page:destination,read:false,at:Date.now()});
+  notifications=notifications.slice(0,70);saveNotifications();syncNotificationBadge();
+}
+function relativeNotificationTime(at){
+  const minutes=Math.max(0,Math.floor((Date.now()-at)/60000));
+  if(minutes<1)return 'Just now';
+  if(minutes<60)return minutes+' min ago';
+  if(minutes<1440)return Math.floor(minutes/60)+' hr ago';
+  return Math.floor(minutes/1440)+' days ago';
+}
+function syncNotificationBadge(){
+  const b=$('#notificationBtn b'),button=$('#notificationBtn');if(!button||!b)return;
+  const n=notifications.filter(x=>!x.read).length;
+  b.textContent=n>9?'9+':String(n);b.style.display=n?'grid':'none';
+  button.setAttribute('aria-label',n?`Notifications, ${n} unread`:'Notifications, all read');
+  button.setAttribute('aria-haspopup','dialog');
+  if(!button.hasAttribute('aria-expanded'))button.setAttribute('aria-expanded','false');
+}
+function closeNotificationPanel(){
+  $('#notificationPanel')?.remove();
+  $('#notificationBtn')?.setAttribute('aria-expanded','false');
+}
+function renderNotificationPanel(){
+  const panel=$('#notificationPanel');if(!panel)return;
+  panel.innerHTML='<div class="rp-notification-header"><div><strong>Notifications</strong><p>Updates from your restaurant</p></div><button type="button" data-notif-action="mark-all" class="rp-mark-all">Mark all read</button></div>'+
+   '<div class="rp-notification-list">'+(notifications.length?notifications.map(n=>{
+    const iconName=({order:'shopping-bag',reservation:'calendar-days',stock:'alert-triangle',table:'armchair',status:'check-circle-2',activity:'activity'})[n.type]||'bell';
+    return `<button type="button" class="rp-notification-item ${n.read?'':'unread'}" data-notification-id="${E(n.id)}"><span class="rp-notification-icon ${E(n.type)}">${icons(iconName)}</span><span class="rp-notification-body"><strong>${E(n.title)}</strong><span>${E(n.message)}</span><small>${E(relativeNotificationTime(n.at))}</small></span>${n.read?'':'<span class="rp-unread-dot"></span>'}</button>`;
+   }).join(''):'<div class="rp-notification-empty">You are all caught up ✨</div>')+'</div><div class="rp-notification-footer"><span>Demo alerts · Stored on this device</span><button type="button" data-notif-action="clear-read">Clear read</button></div>';
+  refresh();
+}
+function toggleNotificationPanel(){
+  closeCustomSelect();
+  if($('#notificationPanel')){closeNotificationPanel();return}
+  const node=document.createElement('div');node.id='notificationPanel';node.className='rp-notification-panel';node.setAttribute('role','dialog');node.setAttribute('aria-label','Restaurant notifications');
+  $('.topbar-right')?.append(node);
+  $('#notificationBtn')?.setAttribute('aria-expanded','true');
+  renderNotificationPanel();
+}
+document.addEventListener('click',event=>{
+  const target=event.target.closest('[data-notification-id]');
+  if(target){
+    const notification=notifications.find(n=>n.id===target.dataset.notificationId);
+    if(!notification)return;
+    notification.read=true;saveNotifications();syncNotificationBadge();closeNotificationPanel();
+    if(notification.page&&views[notification.page])go(notification.page);
+    return;
+  }
+  const act=event.target.closest('[data-notif-action]');
+  if(act){
+    if(act.dataset.notifAction==='mark-all')notifications.forEach(n=>n.read=true);
+    if(act.dataset.notifAction==='clear-read')notifications=notifications.filter(n=>!n.read);
+    saveNotifications();syncNotificationBadge();renderNotificationPanel();
+    toast(act.dataset.notifAction==='mark-all'?'Notifications marked as read':'Read notifications cleared');
+    return;
+  }
+  if($('#notificationPanel')&&!event.target.closest('#notificationPanel')&&!event.target.closest('#notificationBtn'))closeNotificationPanel();
+});
+enhanceSelects();
+syncNotificationBadge();
+
