@@ -207,9 +207,6 @@ $('#userProfile')?.addEventListener('click',()=>go('settings'));$('#topAvatar')?
 $('#notificationBtn')?.addEventListener('click',e=>{e.stopPropagation();toggleNotificationPanel()});
 $('#searchTrigger')?.addEventListener('click',()=>{go('orders');$('#listSearch')?.focus()});
 window.addEventListener('hashchange',()=>{if(new URLSearchParams(location.search).has('guest'))return;const v=location.hash.slice(1);if(views[v]&&v!==page){page=v;query='';filter='all';render()}});
-if(new URLSearchParams(location.search).has('guest'))guestRender();else{page=views[location.hash.slice(1)]?location.hash.slice(1):'overview';$('#footerYear').textContent=new Date().getFullYear();render()}
-
-
 /* --- RestoPilot premium select system --- */
 let selectPopup=null;
 function closeCustomSelect(){
@@ -380,4 +377,4 @@ document.addEventListener('click',event=>{
 });
 enhanceSelects();
 syncNotificationBadge();
-
+if(new URLSearchParams(location.search).has('guest'))guestRender();else{page=views[location.hash.slice(1)]?location.hash.slice(1):'overview';$('#footerYear').textContent=new Date().getFullYear();render()}
