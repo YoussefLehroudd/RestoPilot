@@ -597,3 +597,92 @@ body.dark .theme-mini-btn.active{
   .breadcrumbs>span,.breadcrumbs>svg{display:none}
   .header-theme-toggle{border-radius:9px}
 }
+
+
+/* Notification Center responsive mobile layout — viewport-contained */
+.rp-notification-panel{
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  max-height:min(620px,calc(100vh - 100px));
+  max-height:min(620px,calc(100dvh - 100px));
+}
+.rp-notification-header,
+.rp-notification-footer{
+  min-width:0;
+}
+.rp-notification-header > div{
+  flex:1 1 auto;
+  min-width:0;
+}
+.rp-notification-header strong,
+.rp-notification-header p{
+  overflow-wrap:anywhere;
+}
+.rp-notification-header .rp-mark-all,
+.rp-notification-footer button{
+  flex:0 0 auto;
+  min-height:32px;
+  padding:5px 0;
+}
+.rp-notification-list{
+  min-height:0;
+  max-height:none;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+}
+.rp-notification-item,
+.rp-notification-body{
+  min-width:0;
+}
+.rp-notification-body strong,
+.rp-notification-body > span{
+  overflow-wrap:anywhere;
+}
+@media(max-width:820px){
+  .rp-notification-panel{
+    position:fixed;
+    top:85px;
+    left:max(12px,env(safe-area-inset-left,0px));
+    right:max(12px,env(safe-area-inset-right,0px));
+    width:auto;
+    max-width:none;
+    max-height:calc(100vh - 100px);
+    max-height:calc(100dvh - 100px - env(safe-area-inset-bottom,0px));
+    border-radius:16px;
+    margin:0;
+    z-index:120;
+  }
+  .rp-notification-header{gap:8px;padding:15px 16px 12px}
+  .rp-notification-header strong{font-size:15px}
+  .rp-notification-header p{font-size:10px}
+  .rp-mark-all{font-size:11px}
+  .rp-notification-item{padding:12px 10px;gap:10px}
+  .rp-notification-icon{width:36px;height:36px;min-width:36px}
+  .rp-notification-body strong{font-size:11px}
+  .rp-notification-body > span{font-size:10px}
+  .rp-notification-footer{gap:8px;padding:10px 14px}
+  .rp-notification-footer span{min-width:0;overflow-wrap:anywhere;line-height:1.4}
+}
+@media(max-width:610px){
+  .rp-notification-panel{
+    top:72px;
+    max-height:calc(100vh - 84px);
+    max-height:calc(100dvh - 84px - env(safe-area-inset-bottom,0px));
+  }
+}
+@media(max-width:380px){
+  .topbar{padding-inline:11px}
+  .topbar-left,.topbar-right{gap:5px}
+  .topbar .icon-button{height:33px;width:33px}
+  .topbar .top-avatar.owner-photo{width:34px;height:34px}
+  .topbar .theme-mini-btn{height:29px;width:29px}
+  .rp-notification-panel{
+    left:max(9px,env(safe-area-inset-left,0px));
+    right:max(9px,env(safe-area-inset-right,0px));
+  }
+  .rp-notification-header{padding:13px 12px}
+  .rp-notification-header strong{font-size:14px}
+  .rp-mark-all{font-size:10px}
+  .rp-notification-footer{padding-inline:12px}
+}
