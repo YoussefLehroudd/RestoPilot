@@ -841,3 +841,23 @@ body.dark .sidebar-scroll{scrollbar-color:transparent transparent}
   .sidebar .workspace{margin-bottom:7px}
   .sidebar .sidebar-nav .nav-label:first-child{padding-top:12px}
 }
+
+
+/* Keep all table dates on a single line across mobile and desktop */
+.data-table .table-date{
+  display:inline-block;
+  white-space:nowrap;
+  word-break:normal;
+  min-width:max-content;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:610px){
+  .data-table td:has(> .table-date){
+    white-space:nowrap;
+    min-width:105px;
+  }
+  .data-table .table-date{
+    font-size:11px;
+    letter-spacing:-.08px;
+  }
+}
