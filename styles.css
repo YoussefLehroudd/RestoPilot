@@ -861,3 +861,7 @@ body.dark .sidebar-scroll{scrollbar-color:transparent transparent}
     letter-spacing:-.08px;
   }
 }
+
+/* Reservation PARTY values remain on one line in compact tables */
+.data-table .table-party{display:inline-block;white-space:nowrap;word-break:keep-all;min-width:max-content;font-variant-numeric:tabular-nums}
+@media(max-width:610px){.data-table td:has(> .table-party){white-space:nowrap;min-width:80px}.data-table .table-party{font-size:11px}}
