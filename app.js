@@ -219,7 +219,7 @@ function closeCustomSelect(){
 function enhanceSelects(root=document){
   root.querySelectorAll('select:not([data-enhanced])').forEach(native=>{
     native.dataset.enhanced='true';
-    const wrap=document.createElement('div');wrap.className='rp-select';
+    const wrap=document.createElement('div');wrap.className='rp-select';if(native.hasAttribute('data-status'))wrap.classList.add('rp-status');
     native.parentNode.insertBefore(wrap,native);wrap.appendChild(native);
     native.classList.add('rp-native-select');native.tabIndex=-1;native.setAttribute('aria-hidden','true');
     const trigger=document.createElement('button');trigger.type='button';
@@ -303,8 +303,9 @@ document.addEventListener('keydown',event=>{
     }else if(event.key==='Enter'||event.key===' '){event.preventDefault();pickCustomSelect(Number(event.target.dataset.selectIndex))}
   }
 });
-window.addEventListener('scroll',closeCustomSelect,true);
+window.addEventListener('scroll',e=>{if(!e.target?.closest?.('.rp-select-menu'))closeCustomSelect()},true);
 window.addEventListener('resize',closeCustomSelect);
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&selectPopup){event.preventDefault();event.stopPropagation();closeCustomSelect()}},true);
 
 /* --- RestoPilot notification center --- */
 const notificationKey='restopilot-notifications-v2';
